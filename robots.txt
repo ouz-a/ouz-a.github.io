@@ -1,0 +1,2 @@
+User-agent: *
+Sitemap: https://ouz-a.github.io/sitemap.xml
