@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>The Bug - Oguz Hacks Stuff</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author"
+  content="ouz-a" /><meta name="description" content="Introduction Before we begin I will assume you know the basics of Rust and some basic computer science stuff, I will try to explain everything else.
+This is a story of a bug that broke the Rust compiler so hard it required two months to fix, it produced all manners of crashes, bugs that produced their crashes and horrors beyond reason.
+Like all good engineering stories, this one starts with a problem." />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.101.0 with theme even" />
+
+
+<link rel="canonical" href="https://ouz-a.github.io/post/bug_hunt/" />
+<link rel="manifest" href="/%20manifest.json">
+<link rel="mask-icon" href="/%20safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.aa6f67945f30f0107238c9efa286c087c065fa91e96b9021ef01526a46f158f2.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="The Bug" />
+<meta property="og:description" content="Introduction Before we begin I will assume you know the basics of Rust and some basic computer science stuff, I will try to explain everything else.
+This is a story of a bug that broke the Rust compiler so hard it required two months to fix, it produced all manners of crashes, bugs that produced their crashes and horrors beyond reason.
+Like all good engineering stories, this one starts with a problem." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ouz-a.github.io/post/bug_hunt/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2022-07-30T15:41:58+03:00" />
+<meta property="article:modified_time" content="2022-07-30T15:41:58+03:00" />
+
+<meta itemprop="name" content="The Bug">
+<meta itemprop="description" content="Introduction Before we begin I will assume you know the basics of Rust and some basic computer science stuff, I will try to explain everything else.
+This is a story of a bug that broke the Rust compiler so hard it required two months to fix, it produced all manners of crashes, bugs that produced their crashes and horrors beyond reason.
+Like all good engineering stories, this one starts with a problem."><meta itemprop="datePublished" content="2022-07-30T15:41:58+03:00" />
+<meta itemprop="dateModified" content="2022-07-30T15:41:58+03:00" />
+<meta itemprop="wordCount" content="2526">
+<meta itemprop="keywords" content="" /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="The Bug"/>
+<meta name="twitter:description" content="Introduction Before we begin I will assume you know the basics of Rust and some basic computer science stuff, I will try to explain everything else.
+This is a story of a bug that broke the Rust compiler so hard it required two months to fix, it produced all manners of crashes, bugs that produced their crashes and horrors beyond reason.
+Like all good engineering stories, this one starts with a problem."/>
+
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">Oguz Hacks Stuff</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/post/">
+        <li class="mobile-menu-item">Archives</li>
+      </a>
+  </ul>
+
+  
+
+
+</nav>
+
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">Oguz Hacks Stuff</a>
+</div>
+
+
+
+
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/post/">Archives</a>
+      </li>
+  </ul>
+</nav>
+
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">The Bug</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2022-07-30 </span>
+        
+          <span class="more-meta"> 2526 words </span>
+          <span class="more-meta"> 12 mins read </span>
+      </div>
+    </header>
+
+    <div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">Contents</h2>
+  <div class="post-toc-content always-active">
+    <nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#introduction">Introduction</a>
+          <ul>
+            <li><a href="#super-quick-intro">Super quick intro</a></li>
+          </ul>
+        </li>
+        <li><a href="#the-problem">The Problem</a>
+          <ul>
+            <li><a href="#solution">Solution</a></li>
+            <li><a href="#derefer">Derefer</a></li>
+          </ul>
+        </li>
+        <li><a href="#the-bug">The Bug</a>
+          <ul>
+            <li><a href="#end">End</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+  </div>
+</div>
+    <div class="post-content">
+      <h2 id="introduction">Introduction</h2>
+<p>Before we begin I will assume you know the basics of <a href="https://www.rust-lang.org/">Rust</a> and some basic computer science stuff, I will try to explain everything else.</p>
+<p>This is a story of a bug that broke the Rust compiler so hard it required two months to fix, it produced all manners of crashes, bugs that produced their crashes and horrors beyond reason.</p>
+<p>Like all good engineering stories, this one starts with a problem.</p>
+<p>To understand what this problem is we need a super quick intro to the Rust compiler.</p>
+<h3 id="super-quick-intro">Super quick intro</h3>
+<p>When you build your Rust project, the Rust compiler does a lot of things to make your code, safe, secure, and fast, it starts this by first checking your command line argument like did you run <code>cargo run --release</code> or just <code>cargo run</code>, which alters checks and optimizations done by the compiler.</p>
+<p>Then we get to <a href="https://en.wikipedia.org/wiki/Lexical_analysis">lexing</a> which produces tokens, these tokens get into parser which produces <a href="https://en.wikipedia.org/wiki/Abstract_syntax_tree">Abstract Syntax Tree</a> next AST is converted into <a href="https://en.wikipedia.org/wiki/Intermediate_representation">High-Level Intermediate Representation</a>, <code>HIR</code> is a compiler-friendly version of your Rust program.</p>
+<p><code>HIR</code> is used to do <em>type-inference</em>, <em>trait solving</em>, and <em>type checking</em>. After doing those <code>HIR</code> is lowered to <a href="https://rustc-dev-guide.rust-lang.org/overview.html#mir-lowering">Mid-level Intermediate Representation</a> this is where many optimizations and borrow checking happens (yes that borrow checker).</p>
+<p>Because our problem resides within <code>MIR</code> I won&rsquo;t give any more details about the rest of the Rust compiler, if you want to read more about it click <a href="https://rustc-dev-guide.rust-lang.org/overview.html">here</a>.</p>
+<h2 id="the-problem">The Problem</h2>
+<p>Now that we had our super quick intro to the Rust compiler we can explore the problem.</p>
+<blockquote>
+<p>The MIR uses <code>Place</code> to refer to memory locations. A <code>Place</code> consists of a base, either a static or a local, and a series of projections starting from that base. With one exception, these projections are merely refinements of the base: they specify a field, an array element, or the portion of memory corresponding to a given enum variant. However, the <code>Deref</code> projection is unique in that the target of the  <code>Place</code> refers to a completely different region of memory than the base. As a result, several analyses must iterate over each place to see whether that place contains a <code>Deref</code>&quot;</p>
+</blockquote>
+<p>In code, this translates into:</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-rust" data-lang="rust"><span class="line"><span class="cl"><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">17</span><span class="p">,</span><span class="mi">13</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">99</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">a</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">let</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">b</span><span class="p">.</span><span class="mi">1</span><span class="p">).</span><span class="mi">0</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1">// Given the code above emitted MIR would be this.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">_0</span>: <span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">_1</span>: <span class="p">(</span><span class="kt">i32</span><span class="p">,</span><span class="w"> </span><span class="kt">i32</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">_3</span>: <span class="kp">&amp;</span><span class="nc">mut</span><span class="w"> </span><span class="p">(</span><span class="kt">i32</span><span class="p">,</span><span class="w"> </span><span class="kt">i32</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">_4</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="p">((</span><span class="o">*</span><span class="p">(</span><span class="n">_2</span><span class="p">.</span><span class="mi">1</span>: <span class="kp">&amp;</span><span class="nc">mut</span><span class="w"> </span><span class="p">(</span><span class="kt">i32</span><span class="p">,</span><span class="w"> </span><span class="kt">i32</span><span class="p">))).</span><span class="mi">0</span>: <span class="kt">i32</span><span class="p">);</span><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">_5</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="p">((</span><span class="o">*</span><span class="p">(</span><span class="n">_2</span><span class="p">.</span><span class="mi">1</span>: <span class="kp">&amp;</span><span class="nc">mut</span><span class="w"> </span><span class="p">(</span><span class="kt">i32</span><span class="p">,</span><span class="w"> </span><span class="kt">i32</span><span class="p">))).</span><span class="mi">1</span>: <span class="kt">i32</span><span class="p">);</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>This is the result for a basic case, the more complex this gets longer the <code>Deref</code> chain becomes, which results in more complexity to be solved by MIR analyses.</p>
+<h3 id="solution">Solution</h3>
+<p>What&rsquo;s the solution? Remove <code>Deref</code> from projections, but just removing the whole thing would cause chaos, instead, we remove it in small baby steps.</p>
+<p>This is where I started my work. One day I asked <a href="https://github.com/oli-obk">oli-obk</a> what should I work on, he pointed me to this problem and said we just basically need to do this:</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-rust" data-lang="rust"><span class="line"><span class="cl"><span class="kd">let</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">a</span><span class="p">.</span><span class="n">b</span><span class="p">).</span><span class="n">c</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>into</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-rust" data-lang="rust"><span class="line"><span class="cl"><span class="kd">let</span><span class="w"> </span><span class="n">tmp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">b</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">let</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">tmp</span><span class="p">).</span><span class="n">c</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Which I (with the mentoring of oli-obk) <a href="https://github.com/rust-lang/rust/pull/95649">did</a>. I created a new <code>MIR</code> optimization named <code>Derefer</code> pass that does the above-mentioned conversion.</p>
+<p>Sounds like a happy ending doesn&rsquo;t it, unfortunately, it isn&rsquo;t, <code>MIR</code> has a lot of optimization passes and I can&rsquo;t just do the conversion without any side effects, so the plan was to pull <code>Derefer</code> early in the passes and deal with a single pass at a time.</p>
+<p>Everything went relatively well until I met with <code>elaborate_drops</code>.</p>
+<h3 id="derefer">Derefer</h3>
+<p>This is the explanation for the main body of <code>deref_separator</code>.</p>
+<p>We need to learn a few terms before reading the code.</p>
+<ul>
+<li><code>Body</code> : The lowered representation of a single function.</li>
+<li><code>Rvalue</code>: Expressions that produce value</li>
+<li><code>Operand</code>: The argument to an rvalue</li>
+<li><code>Locals</code>: Memory locations allocated on the stack(temp values, local variables, function arguments)</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-rust" data-lang="rust"><span class="line"><span class="cl"><span class="c1">// This function visit every `Place` within a MIR body
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">fn</span> <span class="nf">visit_place</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="n">place</span>: <span class="kp">&amp;</span><span class="nc">mut</span><span class="w"> </span><span class="n">Place</span><span class="o">&lt;&#39;</span><span class="na">tcx</span><span class="o">&gt;</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">cntxt</span>: <span class="nc">PlaceContext</span><span class="p">,</span><span class="w"> </span><span class="n">loc</span>: <span class="nc">Location</span><span class="p">){</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="o">!</span><span class="n">place</span><span class="p">.</span><span class="n">projection</span><span class="p">.</span><span class="n">is_empty</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">cntxt</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">PlaceContext</span>::<span class="n">NonUse</span><span class="p">(</span><span class="n">VarDebugInfo</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">place</span><span class="p">.</span><span class="n">projection</span><span class="p">[</span><span class="mi">1</span><span class="o">..</span><span class="p">].</span><span class="n">contains</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ProjectionElem</span>::<span class="n">Deref</span><span class="p">)</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><ol start="3">
+<li>Projections shouldn&rsquo;t be empty&hellip;</li>
+<li>Since the problem only starts when <code>Derefer</code> is not at the start of the projection list, we skip non-problematic ones.</li>
+</ol>
+<hr>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-rust" data-lang="rust"><span class="line"><span class="cl"><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">place_local</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">place</span><span class="p">.</span><span class="n">local</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">last_len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">last_deref_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">prev_temp</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="n">Local</span><span class="o">&gt;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">None</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">idx</span><span class="p">,</span><span class="w"> </span><span class="n">elem</span><span class="p">)</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">place</span><span class="p">.</span><span class="n">projection</span><span class="p">[</span><span class="mi">0</span><span class="o">..</span><span class="p">].</span><span class="n">iter</span><span class="p">().</span><span class="n">enumerate</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="o">*</span><span class="n">elem</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">ProjectionElem</span>::<span class="n">Deref</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">last_deref_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">idx</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><ol>
+<li>We need to have a starting local.</li>
+<li>We start copying from the beginning so this will start at 0 (this is going to make more sense later)</li>
+<li>Position of the last <code>Deref</code> in the slice of projections.</li>
+<li>We have to destroy the last temp we created, this is <code>None</code> for now</li>
+</ol>
+<hr>
+<p><code>patcher</code> here refers to the struct called <code>MirPatch</code> which can add, new <code>Locals</code> new <code>Statements</code> etc.</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-rust" data-lang="rust"><span class="line"><span class="cl"><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">idx</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">p_ref</span><span class="p">,</span><span class="w"> </span><span class="n">p_elem</span><span class="p">))</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">place</span><span class="p">.</span><span class="n">iter_projections</span><span class="p">().</span><span class="n">enumerate</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="o">!</span><span class="n">p_ref</span><span class="p">.</span><span class="n">projection</span><span class="p">.</span><span class="n">is_empty</span><span class="p">()</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">p_elem</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">ProjectionElem</span>::<span class="n">Deref</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="kd">let</span><span class="w"> </span><span class="n">ty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_ref</span><span class="p">.</span><span class="n">ty</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">.</span><span class="n">local_decls</span><span class="p">,</span><span class="w"> </span><span class="bp">self</span><span class="p">.</span><span class="n">tcx</span><span class="p">).</span><span class="n">ty</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="kd">let</span><span class="w"> </span><span class="n">temp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="bp">self</span><span class="p">.</span><span class="n">patcher</span><span class="p">.</span><span class="n">new_local_with_info</span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="n">ty</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="bp">self</span><span class="p">.</span><span class="n">local_decls</span><span class="p">[</span><span class="n">p_ref</span><span class="p">.</span><span class="n">local</span><span class="p">].</span><span class="n">source_info</span><span class="p">.</span><span class="n">span</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="nb">Some</span><span class="p">(</span><span class="nb">Box</span>::<span class="n">new</span><span class="p">(</span><span class="n">LocalInfo</span>::<span class="n">DerefTemp</span><span class="p">)),</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><ol>
+<li><code>idx</code> will be used to compare with <code>last_deref_idx</code></li>
+<li>We only care for <code>Deref</code></li>
+<li><code>temp</code> is created with <code>MirPatch</code>, it will be used for derefing</li>
+<li>We mark this as <code>DerefTemp</code>, so we can retrieve this information when needed (it will be needed in other mir-opts)</li>
+</ol>
+<hr>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-rust" data-lang="rust"><span class="line"><span class="cl"><span class="bp">self</span><span class="p">.</span><span class="n">patcher</span><span class="p">.</span><span class="n">add_statement</span><span class="p">(</span><span class="n">loc</span><span class="p">,</span><span class="w"> </span><span class="n">StatementKind</span>::<span class="n">StrorageLive</span><span class="p">(</span><span class="n">temp</span><span class="p">));</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">let</span><span class="w"> </span><span class="n">deref_place</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Place</span>::<span class="n">from</span><span class="p">(</span><span class="n">place_local</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">.</span><span class="n">project_deeper</span><span class="p">(</span><span class="o">&amp;</span><span class="n">p_ref</span><span class="p">.</span><span class="n">projection</span><span class="p">[</span><span class="n">last_len</span><span class="o">..</span><span class="p">],</span><span class="w"> </span><span class="bp">self</span><span class="p">.</span><span class="n">tcx</span><span class="p">);</span><span class="w">               
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><ol>
+<li>We mark the temp we just created as living. <code>StorageLive</code> and <code>StorageDead</code> mark the live range of a local</li>
+<li>These last 2 lines are quite important, I will be explaining them with example code below.</li>
+</ol>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-rust" data-lang="rust"><span class="line"><span class="cl"><span class="k">fn</span> <span class="nf">main</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">     </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">42</span><span class="p">,</span><span class="w"> </span><span class="mi">43</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">     </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">99</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">a</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">     </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">11</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">b</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">     </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">13</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">c</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">     </span><span class="kd">let</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">d</span><span class="p">.</span><span class="mi">1</span><span class="p">).</span><span class="mf">1.1.1</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Given this code, <code>deref_place</code> and <code>last_len</code> will have these values.</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-rust" data-lang="rust"><span class="line"><span class="cl"><span class="n">projections</span><span class="p">[</span><span class="n">Field</span><span class="p">(</span><span class="n">field</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="w"> </span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="p">(</span><span class="kt">i32</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="p">(</span><span class="kt">i32</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="p">(</span><span class="kt">i32</span><span class="p">,</span><span class="w"> </span><span class="kt">i32</span><span class="p">)))]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">last_len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1">// in the next loop
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">projections</span><span class="p">[</span><span class="n">Deref</span><span class="p">,</span><span class="n">Field</span><span class="p">(</span><span class="n">field</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="w"> </span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="p">(</span><span class="kt">i32</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="p">(</span><span class="kt">i32</span><span class="p">,</span><span class="w"> </span><span class="kt">i32</span><span class="p">)))]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">last_len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1">// in the last loop
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">projections</span><span class="p">[</span><span class="n">Deref</span><span class="p">,</span><span class="w"> </span><span class="n">Field</span><span class="p">(</span><span class="n">field</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="w"> </span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="p">(</span><span class="kt">i32</span><span class="p">,</span><span class="w"> </span><span class="kt">i32</span><span class="p">))]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">last_len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>As you can see, we cut away <code>&amp;</code> with each loop creating a new temp that holds the next referenced value.</p>
+<hr>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-rust" data-lang="rust"><span class="line"><span class="cl"><span class="bp">self</span><span class="p">.</span><span class="n">patcher</span><span class="p">.</span><span class="n">add_assign</span><span class="p">(</span><span class="n">loc</span><span class="p">,</span><span class="w"> </span><span class="n">Place</span>::<span class="nb">From</span><span class="p">(</span><span class="n">temp</span><span class="p">),</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Rvalue</span>::<span class="n">CopyForDeref</span><span class="p">(</span><span class="n">deref_place</span><span class="p">),);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">place_local</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">temp</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">last_len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_ref</span><span class="p">.</span><span class="n">projection</span><span class="p">.</span><span class="n">len</span><span class="p">();</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><ol>
+<li>We assign the newly created <code>deref_place</code> to our <code>temp</code> using, <code>Rvalue::CopyForDeref</code> which is basically <code>Copy</code> but let us differentiate it from normal <code>Copy</code>.</li>
+<li>In the next loop <code>deref_place</code> will be created from this temps local value.</li>
+<li>We update last_len as explained above.</li>
+</ol>
+<hr>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-rust" data-lang="rust"><span class="line"><span class="cl"><span class="k">if</span><span class="w"> </span><span class="n">idx</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">last_deref_idx</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">temp_place</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Place</span>::<span class="n">from</span><span class="p">(</span><span class="n">temp</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">.</span><span class="n">project_deeper</span><span class="p">(</span><span class="o">&amp;</span><span class="n">place</span><span class="p">.</span><span class="n">projection</span><span class="p">[</span><span class="n">idx</span><span class="o">..</span><span class="p">],</span><span class="w"> </span><span class="bp">self</span><span class="p">.</span><span class="n">tcx</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="o">*</span><span class="n">place</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">temp_place</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><ol>
+<li>
+<p>Remember <code>last_deref_idx</code> ? this is where we use it.</p>
+</li>
+<li>
+<p>For the example given above temp place&rsquo;s projections are <code>    Deref, Field( field[1], i32, ),</code> as you can see final projection is clean, meaning we successfully transformed it from this</p>
+<pre><code>`_8 = &amp;mut ((*((*((*(_6.1: &amp;mut (i32, &amp;mut (i32, &amp;mut (i32, i32))))).1: &amp;mut (i32, &amp;mut (i32, i32)))).1: &amp;mut (i32, i32))).1: i32);`
+</code></pre>
+<p>to this <code>_8 = &amp;mut ((*_12).1: i32); </code></p>
+</li>
+<li>
+<p>We swap the original place, with our final value.</p>
+</li>
+</ol>
+<hr>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-rust" data-lang="rust"><span class="line"><span class="cl"><span class="k">if</span><span class="w"> </span><span class="kd">let</span><span class="w"> </span><span class="nb">Some</span><span class="p">(</span><span class="n">prev_temp</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">prev_temp</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="bp">self</span><span class="p">.</span><span class="n">patcher</span><span class="p">.</span><span class="n">add_statement</span><span class="p">(</span><span class="n">loc</span><span class="p">,</span><span class="w"> </span><span class="n">StatementKind</span>::<span class="n">StorageDead</span><span class="p">(</span><span class="n">prev_temp</span><span class="p">));</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">prev_temp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">Some</span><span class="p">(</span><span class="n">temp</span><span class="p">)</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><ol>
+<li>Since we have to eliminate previously created temps we do it here</li>
+<li>Since we are at the end of our loop we assign, temp as <code>prev_temp</code> to be destroyed in the next loop.</li>
+</ol>
+<h2 id="the-bug">The Bug</h2>
+<p>Now we know how <code>Derefer</code> works it&rsquo;s easier to explain what went wrong with it.</p>
+<p>After I pulled <code>Derefer</code> before <code>elaborate_drops</code> compiler started complaining that I was moving things that shouldn&rsquo;t be moved, normally this is a serious error but remember we are creating temporary value with <code>Derefer</code> and we are only copying very specific things, so I created a new <a href="https://doc.rust-lang.org/nightly/nightly-rustc/rustc_middle/mir/enum.Rvalue.html#variant.CopyForDeref">Rvalue::CopyForDeref</a>, which lets us bypass <code>Move</code> error caused by the <code>elaborate_drops</code>.</p>
+<p>With that out of the way I thought, that should be it we shouldn&rsquo;t have any more problems with this I hit compile, and everything is going well compiler compiles itself :D.
+Because we are dealing with a very complex topic, being able to compile is not a good measure of anything, thankfully brilliant <a href="https://github.com/RalfJung">RalfJung</a> came up with a tool called <code>Miri</code> which catches bugs that would be impossible to catch otherwise.</p>
+<p>So I start compiling <code>Miri</code>(it takes 20 minutes), and almost at the end the whole thing crashes, normally when you are dealing with the compiler, <em>Internal Compiler Errors</em> or <code>ICE</code> are things you see every day and they give quite good information, an error message, backtrace for your program, etc. However, this one was different.</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-rust" data-lang="rust"><span class="line"><span class="cl"><span class="n">Caused</span><span class="w"> </span><span class="n">by</span>:
+</span></span><span class="line"><span class="cl"><span class="nc">process</span><span class="w"> </span><span class="n">didn</span><span class="o">&#39;</span><span class="na">t</span><span class="w"> </span><span class="n">exit</span><span class="w"> </span><span class="n">successfully</span>: <span class="o">..</span><span class="p">.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">warning</span>: <span class="nc">build</span><span class="w"> </span><span class="n">failed</span><span class="p">,</span><span class="w"> </span><span class="n">waiting</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">other</span><span class="w"> </span><span class="n">jobs</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">finish</span><span class="o">..</span><span class="p">.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">error</span>: <span class="err">`</span><span class="s">&#34;/Users/ouz/Documents/GitHub/rust/build/aarch64-apple-darwin/stage0/bin/cargo&#34;</span><span class="w"> </span><span class="s">&#34;check&#34;</span><span class="w"> </span><span class="s">&#34;--release&#34;</span><span class="w"> </span><span class="s">&#34;--manifest-path&#34;</span><span class="w"> </span><span class="s">&#34;/var/folders/8f/tlj_q5zj6v9g71vp_q32pb7r0000gn/T/xargo.bBvDKyqBOkYA/Cargo.toml&#34;</span><span class="w"> </span><span class="s">&#34;--target&#34;</span><span class="w"> </span><span class="s">&#34;aarch64-apple-darwin&#34;</span><span class="w"> </span><span class="s">&#34;-p&#34;</span><span class="w"> </span><span class="s">&#34;std&#34;</span><span class="err">`</span><span class="w"> </span><span class="n">failed</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="n">exit</span><span class="w"> </span><span class="n">code</span>: <span class="nb">Some</span><span class="p">(</span><span class="mi">101</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">fatal</span><span class="w"> </span><span class="n">error</span>: <span class="nc">failed</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">run</span><span class="w"> </span><span class="n">xargo</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">Build</span><span class="w"> </span><span class="n">completed</span><span class="w"> </span><span class="n">unsuccessfully</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="mi">0</span>:<span class="mi">06</span>:<span class="mi">48</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>What? So you are telling me the compiler compiled a few million lines of Rust code without any errors, and now it&rsquo;s giving me an error that doesn&rsquo;t make any sense because there is nothing to make sense of how do you create <code>MRE</code> from this error how do you debug this?</p>
+<p>Don&rsquo;t get me wrong I love this, it&rsquo;s like doing a very difficult quest chain in a game. My curiosity was the fuel and <code>println!</code> was my weapon I started hacking the compiler printing everything, trying to break the compiler to see hopefully meaningful error. I spent a few weeks doing this although I didn&rsquo;t manage to solve it I read quite a bit of code and learned a lot which is a good thing.</p>
+<p>We were baffled by the situation, how can you solve a problem you don&rsquo;t know? My <code>println!</code> game got quite good I was comparing everything but it wasn&rsquo;t enough I had to narrow down the situation.</p>
+<p>As they say, desperate times call for desperate measures, I created a monstrosity called <a href="https://github.com/ouz-a/rust/commit/095476f6df12bf4f70653d06e905c38b920c4474#diff-a5d4ecb27e5c0f52acc5f4a682626b916874a3628752c9df61a4af0ef8fa60ce">miri_hunter</a>. (This is the clean version)</p>
+<p>At the time <code>MIR</code> passes were like this <code>miri_hunter -&gt; deref_separator -&gt; elaborate_drops</code>.</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-rust" data-lang="rust"><span class="line"><span class="cl"><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">og_bod</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">body</span><span class="p">.</span><span class="n">clone</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">clon</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">og_bod</span><span class="p">.</span><span class="n">clone</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">let</span><span class="w"> </span><span class="n">derefer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Derefer</span><span class="w"> </span><span class="p">{};</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">let</span><span class="w"> </span><span class="n">elab</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ElaborateDrops</span><span class="w"> </span><span class="p">{};</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">let</span><span class="w"> </span><span class="n">call_g</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">AddCallGuards</span>::<span class="n">CriticalCallEdges</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1">// derefer before elaborate
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">derefer</span><span class="p">.</span><span class="n">run_pass</span><span class="p">(</span><span class="n">tcx</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">og_bod</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">call_g</span><span class="p">.</span><span class="n">run_pass</span><span class="p">(</span><span class="n">tcx</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">og_bod</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">elab</span><span class="p">.</span><span class="n">run_pass</span><span class="p">(</span><span class="n">tcx</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">og_bod</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1">// derefer after elaborate
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">call_g</span><span class="p">.</span><span class="n">run_pass</span><span class="p">(</span><span class="n">tcx</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">clon</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">elab</span><span class="p">.</span><span class="n">run_pass</span><span class="p">(</span><span class="n">tcx</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">clon</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">derefer</span><span class="p">.</span><span class="n">run_pass</span><span class="p">(</span><span class="n">tcx</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">clon</span><span class="p">);</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
+<li>We clone two bodies.</li>
+<li>For <code>og_bod</code> we run -&gt; <code>Derefer -&gt; elab</code></li>
+<li>For <code>clon</code> we run -&gt; <code>elab -&gt; Derefer</code></li>
+</ul>
+<p>We do this to see how putting <code>Derefer</code> changes <code>Body</code>. But you can&rsquo;t just compare two <code>MIR</code> bodies they are huge structs. You can with <code>format!</code> it&rsquo;s cursed and you should never debug your Rust code like this 💀.</p>
+<p>So with that, we compile the compiler waiting to see anything, after a few crashes a few days and the genius of oli-obk we were able kinda to find the problem.</p>
+<p>I won&rsquo;t go into too much detail about how <code>elaborate_drops</code> works as that would require another blog post, but we need to know a tiny about it to understand the next part.</p>
+<p>At the beginning of <code>elaborate_drops</code> there is this line</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-rust" data-lang="rust"><span class="line"><span class="cl"><span class="kd">let</span><span class="w"> </span><span class="n">move_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">match</span><span class="w"> </span><span class="n">MoveData</span>::<span class="n">gather_moves</span><span class="p">(</span><span class="n">body</span><span class="p">,</span><span class="w"> </span><span class="n">tcx</span><span class="p">,</span><span class="w"> </span><span class="n">param_env</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>that gathers <code>Moves</code> from <code>Body</code> well amount of moves <code>og_bod</code> and <code>clon</code> had looked different. You could be asking yourself right now but didn&rsquo;t you deal with that before when you added the new <code>Rvalue::CopyForDeref</code>, I asked the same question and spent the next <a href="https://twitter.com/o_uz_a/status/1528002287876067329">two weeks</a> trying to build a <code>MRE</code>.</p>
+<p>I finally managed to create a <code>MRE</code>, then I wielded <code>println!</code> again and went forth printing every single thing trying to find where this difference was coming from, I then found out that more things were <em>Dropped</em> in <code>og_bod</code> compared to clon, somehow and somewhere temp values created by <code>Derefer</code> was causing weird things.</p>
+<p>This too took a long time at this point I was 2 months into trying to solve this issue I was seeing <code>xargo</code> errors in my dreams but in reality, I couldn&rsquo;t see a solution nor the light at the end of the tunnel.</p>
+<p>Remember that scene from Two Towers, where Helm&rsquo;s Deep was almost taken by Uruk-hai but at the last minute Gandalf comes with the sun rising behind his back with thousands of Rohirrim with him takes Uruk-hai by storm and Rohan wins the war.</p>
+<p>Something similar to that happened, one-morning oli-obk said he had an idea how to solve this problem, and as he explained and showed me how to solve this I was in disbelief he wrote down the basics of <a href="https://doc.rust-lang.org/nightly/nightly-rustc/rustc_mir_dataflow/un_derefer/struct.UnDerefer.html">un_derefer</a> hit compile and it runs without any errors. I was in disbelief, although this wasn&rsquo;t the perfect solution and we couldn&rsquo;t find why temp values caused errors this was the only way forward.</p>
+<p>In the end, I created the <a href="https://github.com/rust-lang/rust/pull/98145">PR</a>, after weeks of hard work and thousands of <code>println!</code> we solved it and it got merged.
+Also, I opened my first <a href="https://github.com/rust-lang/compiler-team/issues/532">major change proposal</a> for this <code>Derefer</code> project.</p>
+<h3 id="end">End</h3>
+<p>I&rsquo;m a self-taught programmer, I couldn&rsquo;t even imagine contributing to a compiler a few years ago let alone, doing work like this, however, Rust is special, it has an awesome community.</p>
+<p>I learned Rust because I was frustrated with C++ which made making my game way harder than it should be, I ported my roguelike to Rust, read the book twice, and read the rustonomicon(best educational material Rust has imo), as I interacted with the community more I started contributing to a <a href="https://github.com/Ralith/hecs">crate</a> I was using, I started to fell in love with open source software.
+I liked coding and solving challenging problems, and this helped people. Perfect.</p>
+<p>At the start of 2022, I re-rolled to college and started a master&rsquo;s in Philosophy, and started contributing to the Rust compiler itself. It was quite challenging, I started small and solved a few <code>ICE</code> issues but I wanted to do something bigger so as above mentioned I asked oli-obk what to work on and he showed me this <code>Deref</code> and he became my mentor ❤️.</p>
+<p>I loved this work and wanted to do this for a living but my professional life was a mess&hellip; Thankfully Rust Foundation opened <a href="https://foundation.rust-lang.org/news/2022-03-31-cgp-is-open-announcement/">Community Grants Program</a> it would give 1000$ a month for a year for selected fellows, I applied, and a few months later they announced I was selected as a fellow.</p>
+<p>Although it was a bit scary, at the start of July I quit college, dropped everything I do decide to become a full-time rustc contributor. In near future, I am going to write more blog posts, and record videos about Rust compiler and educational stuff about how to get into contributing to it.</p>
+<p>You can support the work I do on <a href="https://github.com/sponsors/ouz-a">GitHub</a> or <a href="https://www.patreon.com/ouz_a">Patreon</a>.</p>
+
+    </div>
+
+    
+<footer class="post-footer">
+      
+      <nav class="post-nav">
+        
+        
+      </nav>
+    </footer>
+  </article>
+        </div>
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+      <a href="mailto:ouz.agz@gmail.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://twitter.com/o_uz_a" class="iconfont icon-twitter" title="twitter"></a>
+      <a href="https://github.com/ouz-a" class="iconfont icon-github" title="github"></a>
+  
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    Powered by <a class="hexo-link" href="https://gohugo.io">Hugo</a>
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    Theme - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+
+
+  <span class="copyright-year">
+    &copy; 
+    2022<span class="heart"><i class="iconfont icon-heart"></i></span><span>ouz-a</span>
+  </span>
+</div>
+
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+
+
+
+<script type="text/javascript" src="/js/main.min.4ae89da218555efa0e7093a20b92017d2e1202b66fff9fc2edf4cb8d44b44c6e.js"></script>
+
+
+
+
+
+
+</body>
+</html>

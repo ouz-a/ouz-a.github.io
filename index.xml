@@ -5,7 +5,19 @@
     <link>https://ouz-a.github.io/</link>
     <description>Recent content on Oguz Hacks Stuff</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en</language><atom:link href="https://ouz-a.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <language>en</language>
+    <lastBuildDate>Sat, 30 Jul 2022 15:41:58 +0300</lastBuildDate><atom:link href="https://ouz-a.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>The Bug</title>
+      <link>https://ouz-a.github.io/post/bug_hunt/</link>
+      <pubDate>Sat, 30 Jul 2022 15:41:58 +0300</pubDate>
+      
+      <guid>https://ouz-a.github.io/post/bug_hunt/</guid>
+      <description>Introduction Before we begin I will assume you know the basics of Rust and some basic computer science stuff, I will try to explain everything else.
+This is a story of a bug that broke the Rust compiler so hard it required two months to fix, it produced all manners of crashes, bugs that produced their crashes and horrors beyond reason.
+Like all good engineering stories, this one starts with a problem.</description>
+    </item>
+    
     <item>
       <title>About</title>
       <link>https://ouz-a.github.io/about/</link>
